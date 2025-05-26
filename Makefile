@@ -1,23 +1,58 @@
-CXX       = g++
-CXXFLAGS  = -std=c++17 -O2 -Wall -Wextra
-INCLUDES  = -Iinclude
-SRC_DIR   = src
-OBJ_DIR   = $(SRC_DIR)
+PROJECT = shannon
+LIBPROJECT = $(PROJECT).a
+TESTPROJECT = tests_main
 
-COMMON_OBJ = $(OBJ_DIR)/filemanager.o $(OBJ_DIR)/wordlist.o
-ENC_OBJ    = $(OBJ_DIR)/encoder.o $(OBJ_DIR)/encoder_main.o
-DEC_OBJ    = $(OBJ_DIR)/decoder.o $(OBJ_DIR)/decoder_main.o
+SRC_DIR = src
+TEST_DIR = tests
+INC_DIR = include
 
-all: encode decode
+CXX = g++
+A = ar
+AFLAGS = crs
 
-encode: $(COMMON_OBJ) $(ENC_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+CXXFLAGS = -Wall -Werror -std=c++17 -g -Wpedantic -I$(INC_DIR)
+LDXXFLAGS = $(CXXFLAGS) -lpthread
+LDGTESTFLAGS = $(CXXFLAGS) -lgtest -lgtest_main -lpthread
 
-decode: $(COMMON_OBJ) $(DEC_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+SRC = $(wildcard $(SRC_DIR)/*.cpp)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+APP_SRC = $(SRC_DIR)/main.cpp
+LIB_SRC = $(filter-out $(APP_SRC), $(SRC))
+LIB_OBJ = $(LIB_SRC:.cpp=.o)
+APP_OBJ = $(APP_SRC:.cpp=.o)
+
+TEST_SRC = $(TEST_DIR)/tests.cpp
+TEST_OBJ = $(TEST_SRC:.cpp=.o)
+
+
+DEPS = $(wildcard $(INC_DIR)/*.h)
+
+.PHONY: all test check clean cleanall
+
+all: $(PROJECT)
+
+
+$(PROJECT): $(APP_OBJ) $(LIBPROJECT)
+	$(CXX) -o $@ $(APP_OBJ) $(LIBPROJECT) $(LDXXFLAGS)
+
+
+
+$(LIBPROJECT): $(LIB_OBJ)
+	$(A) $(AFLAGS) $@ $^
+
+
+$(TESTPROJECT): $(TEST_OBJ) $(LIBPROJECT)
+	$(CXX) -o $@ $(TEST_OBJ) $(LIBPROJECT) $(LDGTESTFLAGS)
+
+
+test: $(TESTPROJECT)
+	@./$(TESTPROJECT)
+
+%.o: %.cpp $(DEPS)
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(OBJ_DIR)/*.o encode decode *.txt *.sf
+	rm -f $(APP_OBJ) $(LIB_OBJ) $(TEST_OBJ)
+
+cleanall: clean
+	rm -f $(PROJECT) $(LIBPROJECT) $(TESTPROJECT) *.txt *.sf

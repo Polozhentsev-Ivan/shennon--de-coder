@@ -28,6 +28,10 @@ int encodeFile(const std::string& inPath,
         dict << static_cast<int>(sym) << ' ' << code << '\n';
 
     std::ofstream fout(outPath, std::ios::binary);
+
+    uint64_t origSize = data.size();
+    fout.write(reinterpret_cast<const char*>(&origSize), sizeof(origSize));
+
     FileWriter bw(fout);
     for (uint8_t b : data) bw.put(codes[b]);
     bw.flush();
